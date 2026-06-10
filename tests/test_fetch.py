@@ -36,3 +36,10 @@ def test_article_text_priority():
     assert a.text == "S"          # 本文なし → RSS説明
     a.full_text = "F"
     assert a.text == "F"          # 本文あり → 本文優先
+
+
+def test_google_news_feeds():
+    feeds = fetch.google_news_feeds([{"name": "トヨタ自動車"}, {"name": ""}, {"keywords": ["x"]}])
+    assert len(feeds) == 1        # name が空 / name 無し は除外
+    assert feeds[0].startswith("https://news.google.com/rss/search?q=")
+    assert "hl=ja" in feeds[0] and "gl=JP" in feeds[0]

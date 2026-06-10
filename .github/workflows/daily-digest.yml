@@ -1,0 +1,54 @@
+name: Daily Digest
+
+# 毎朝7時(JST)に自動実行 + 手動実行ボタン
+on:
+  schedule:
+    - cron: "0 22 * * *"   # 22:00 UTC = 07:00 JST
+  workflow_dispatch: {}
+
+permissions:
+  contents: write          # digests/ を履歴としてコミット
+  issues: write            # 生成結果を Issue で通知
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    env:
+      TZ: Asia/Tokyo
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Generate digest
+        run: |
+          # APIキー(Secret)があれば Claude、無ければ mock(0円)に自動で切替
+          if [ -n "$ANTHROPIC_API_KEY" ]; then ENGINE=claude; else ENGINE=mock; fi
+          echo "要約エンジン: $ENGINE"
+          PYTHONPATH=src python -m main --engine "$ENGINE" --out digests
+
+      - name: Commit digest archive
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add digests/
+          if git diff --cached --quiet; then
+            echo "コミットする変更なし"
+          else
+            git commit -m "📰 daily digest $(date +%F)"
+            git push
+          fi
+
+      - name: Notify via GitHub Issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          FILE=$(ls -t digests/digest_*.md | head -1)
+          gh issue create \
+            --title "📰 株ニュースAIダイジェスト $(date +%F)" \
+            --body-file "$FILE"

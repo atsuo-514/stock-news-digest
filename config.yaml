@@ -11,6 +11,11 @@ watchlist:
 # ニュースソース（公開RSSのみ使用すること）。複数指定可。
 feeds: []
 
+# Google News RSS から watchlist の銘柄名で検索フィードを自動生成（実ニュースを取得）
+use_google_news: true
+google_news_lang: ja
+google_news_country: JP
+
 # 取得設定
 max_articles: 20          # 1回で扱う記事の上限
 request_interval_sec: 1.0 # 記事ページ取得のレート制御（サイト負荷に配慮）

@@ -48,6 +48,16 @@ PYTHONPATH=src python -m main --engine claude --full-text
 
 出力は `output/digest_<日付>.md` と `.html`。
 
+## 毎朝の自動運用（GitHub Actions）
+
+[`.github/workflows/daily-digest.yml`](.github/workflows/daily-digest.yml) が **毎朝7時(JST)に自動実行**され、ウォッチ銘柄の最新ニュースを集めてダイジェストを生成し、**GitHub Issueで通知**＋`digests/` に保存します。サーバー不要・公開リポジトリは無料。
+
+- ニュースは **Google News RSS** から銘柄名で実取得（`use_google_news: true`）
+- 要約は **`ANTHROPIC_API_KEY` をリポジトリのSecretに登録すると自動でClaudeに昇格**（未登録ならmockで0円運用）
+- 手動実行: リポジトリの **Actions** タブ →「Daily Digest」→ Run workflow
+
+> APIキーの登録: リポジトリ **Settings → Secrets and variables → Actions → New repository secret**（名前 `ANTHROPIC_API_KEY`）。
+
 ## 設定（config.yaml）
 
 - `watchlist` — 追う銘柄（`name` ＋ `keywords`）

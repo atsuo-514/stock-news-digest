@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import argparse
+import math
 from datetime import date
 from pathlib import Path
 
@@ -38,16 +39,27 @@ def main(argv=None) -> int:
 
     cfg = load_config(args.config)
     watchlist = cfg.get("watchlist", [])
-    feeds = [SAMPLE_FEED] if args.sample else cfg.get("feeds", []) or []
+    if args.sample:
+        feeds = [SAMPLE_FEED]
+    else:
+        feeds = list(cfg.get("feeds") or [])
+        if cfg.get("use_google_news"):
+            feeds += fetch.google_news_feeds(
+                watchlist,
+                lang=cfg.get("google_news_lang", "ja"),
+                country=cfg.get("google_news_country", "JP"),
+            )
     if not feeds:
-        print("フィードが未設定です。config.yaml の feeds を設定するか、--sample を使ってください。")
+        print("フィードが未設定です。config.yaml の feeds / use_google_news を設定するか、--sample を使ってください。")
         return 1
 
     engine = args.engine or cfg.get("summarizer", "mock")
     model = args.model or cfg.get("claude_model")
 
+    max_articles = cfg.get("max_articles", 20)
+    per_feed = math.ceil(max_articles / len(feeds)) if len(feeds) > 1 else None
     print(f"[1/3] ニュース収集 … ソース {len(feeds)} 件")
-    articles = fetch.collect(feeds, watchlist, max_articles=cfg.get("max_articles", 20))
+    articles = fetch.collect(feeds, watchlist, max_articles=max_articles, per_feed=per_feed)
     print(f"      ウォッチ該当記事 {len(articles)} 件")
     if not articles:
         print("該当記事がありませんでした。")

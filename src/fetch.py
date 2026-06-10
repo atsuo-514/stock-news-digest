@@ -7,6 +7,7 @@ RSSのソースはURLでもローカルファイルでも可（feedparser が両
 from __future__ import annotations
 
 import time
+import urllib.parse
 from dataclasses import dataclass, field
 
 import feedparser
@@ -46,12 +47,34 @@ def match_watchlist(text: str, watchlist: list[dict]) -> list[str]:
     return hits
 
 
-def collect(feeds: list[str], watchlist: list[dict], max_articles: int = 20) -> list[Article]:
-    """フィード群から記事を集め、ウォッチに該当するものだけ返す（URLで重複排除）。"""
+def google_news_feeds(watchlist: list[dict], lang: str = "ja", country: str = "JP") -> list[str]:
+    """ウォッチ銘柄名から Google News RSS 検索フィードのURLを生成する（実ニュース取得用）。
+
+    Google News の検索RSSは公開エンドポイントで、銘柄名で実際の最新ニュースが取れる。
+    """
+    feeds = []
+    for w in watchlist:
+        q = (w.get("name") or "").strip()
+        if not q:
+            continue
+        qs = urllib.parse.quote(q)
+        feeds.append(
+            f"https://news.google.com/rss/search?q={qs}&hl={lang}&gl={country}&ceid={country}:{lang}"
+        )
+    return feeds
+
+
+def collect(feeds: list[str], watchlist: list[dict], max_articles: int = 20,
+            per_feed: int | None = None) -> list[Article]:
+    """フィード群から記事を集め、ウォッチに該当するものだけ返す（URLで重複排除）。
+
+    per_feed を指定すると各フィードからの採用数を上限で揃える（銘柄が偏らないように）。
+    """
     seen: set[str] = set()
     out: list[Article] = []
     for src in feeds:
         feed = feedparser.parse(src)
+        n_src = 0
         for e in feed.entries:
             url = e.get("link", "")
             if url in seen:
@@ -65,8 +88,11 @@ def collect(feeds: list[str], watchlist: list[dict], max_articles: int = 20) -> 
             out.append(Article(title=title, url=url,
                                published=e.get("published", ""),
                                summary_src=desc, matched=matched))
+            n_src += 1
             if len(out) >= max_articles:
                 return out
+            if per_feed and n_src >= per_feed:
+                break  # このフィードからの採用は上限まで → 次の銘柄へ
     return out
 
 
