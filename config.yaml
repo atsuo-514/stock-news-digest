@@ -1,0 +1,23 @@
+# ウォッチ対象（自分用の例: 株）。name と keywords でニュースを絞り込む。
+watchlist:
+  - name: トヨタ自動車
+    ticker: "7203"
+    keywords: [トヨタ, Toyota, 豊田]
+  - name: 日経平均
+    keywords: [日経平均, 日経225, Nikkei, 株価指数]
+  - name: 半導体
+    keywords: [半導体, semiconductor, エヌビディア, NVIDIA, TSMC]
+
+# ニュースソース（公開RSSのみ使用すること）。複数指定可。
+feeds: []
+
+# 取得設定
+max_articles: 20          # 1回で扱う記事の上限
+request_interval_sec: 1.0 # 記事ページ取得のレート制御（サイト負荷に配慮）
+fetch_full_text: false    # true で記事ページ本文もスクレイピング（個人利用・低頻度で）
+
+# 要約エンジン: mock（APIなし・0円） | claude（要 ANTHROPIC_API_KEY）
+summarizer: mock
+# 既定は最高性能の Opus 4.8。コスト重視なら claude-haiku-4-5 に変更可
+# （要約用途なら十分な品質で、価格は約1/5）。--model でも上書きできる。
+claude_model: claude-opus-4-8
